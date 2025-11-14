@@ -44,7 +44,7 @@ func (e *Echo) GenerateMarkdown(c echo.Context) error {
 	ctx, done := context.WithTimeout(c.Request().Context(), 30*time.Second)
 	defer done()
 
-	n8nURL := "http://localhost:5678/webhook/generatemd"
+	n8nURL := "http://n8n:5678/webhook/generatemd"
 
 	payload := struct {
 		Content string `json:"content"`
@@ -135,7 +135,7 @@ func (e *Echo) TranscribeAudio(c echo.Context) error {
 
 	// URL Python-сервиса транскрипции.
 	// Можешь вынести в конфиг: e.cfg.TranscriberURL
-	transcriberURL := "http://localhost:8008/transcribe"
+	transcriberURL := "http://whisper:8008/transcribe"
 
 	// Готовим multipart/form-data тело для запроса к сервису
 	var buf bytes.Buffer
