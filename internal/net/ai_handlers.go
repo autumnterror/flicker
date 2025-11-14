@@ -480,7 +480,7 @@ func (e *Echo) FileToVectorDBTest(c echo.Context) error {
 // @Success 200 {object} views.TasksMarkdownResponse
 // @Failure 400 {object} views.SWGError
 // @Failure 502 {object} views.SWGError
-// @Router /api/ai/generatemd-test [post]
+// @Router /api/ai/gentest [post]
 func (e *Echo) GenerateTest(c echo.Context) error {
 	const op = "net.GenerateMarkdownTest"
 	log.Info(op, "")

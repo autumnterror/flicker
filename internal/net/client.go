@@ -57,8 +57,12 @@ func New(
 		{
 			ai.POST("/generatemd", e.GenerateMarkdown)
 			ai.POST("/generatemd-test", e.GenerateMarkdownTest)
+			ai.POST("/gentest", e.GenerateTest)
+
 			ai.POST("/transcribe", e.TranscribeAudio)
 			ai.POST("/file2db", e.FileToVectorDB)
+			ai.POST("/file2dbtest", e.FileToVectorDBTest)
+
 		}
 	}
 
