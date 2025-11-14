@@ -18,6 +18,12 @@ definitions:
         example: Текст документа, который нужно законспектировать
         type: string
     type: object
+  views.GenerateTasksRequest:
+    properties:
+      content:
+        example: Контекст и/или промт для генерации заданий
+        type: string
+    type: object
   views.MarkdownResponse:
     properties:
       markdown:
@@ -34,6 +40,15 @@ definitions:
     properties:
       message:
         example: some info
+        type: string
+    type: object
+  views.TasksMarkdownResponse:
+    properties:
+      markdown:
+        example: |-
+          1. Вопрос...
+             A) ...
+             B) ...
         type: string
     type: object
   views.Tokens:
@@ -113,6 +128,36 @@ paths:
       summary: Upload file to vector DB
       tags:
       - ai
+  /api/ai/file2dbtest:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Принимает файл, отправляет его в n8n webhook file2db, который сохраняет
+        данные во векторную БД
+      parameters:
+      - description: File to index
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/views.File2DBResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/views.SWGError'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/views.SWGError'
+      summary: Upload file to vector DB
+      tags:
+      - ai
   /api/ai/generatemd:
     post:
       consumes:
@@ -148,22 +193,22 @@ paths:
     post:
       consumes:
       - application/json
-      description: Принимает текст и отправляет его в n8n webhook, который генерирует
-        Markdown-конспект через LLM
+      description: Принимает контекст/промт и отправляет его в n8n webhook, который
+        генерирует задания (тесты, вопросы) в формате Markdown на основе этого контекста
       parameters:
-      - description: Text content to summarize
+      - description: Context and/or prompt for tasks generation
         in: body
         name: Content
         required: true
         schema:
-          $ref: '#/definitions/views.GenerateMDRequest'
+          $ref: '#/definitions/views.GenerateTasksRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/views.MarkdownResponse'
+            $ref: '#/definitions/views.TasksMarkdownResponse'
         "400":
           description: Bad Request
           schema:
@@ -172,7 +217,7 @@ paths:
           description: Bad Gateway
           schema:
             $ref: '#/definitions/views.SWGError'
-      summary: Generate Markdown summary
+      summary: Generate tasks in Markdown
       tags:
       - ai
   /api/ai/transcribe:

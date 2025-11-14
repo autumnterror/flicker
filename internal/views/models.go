@@ -75,3 +75,12 @@ type TranscriberServiceResponse struct {
 }
 
 type File2DBResponse map[string]interface{}
+
+type GenerateTasksRequest struct {
+	Content string `json:"content" example:"Контекст и/или промт для генерации заданий"`
+}
+
+// TasksMarkdownResponse — ответ с заданиями в формате Markdown.
+type TasksMarkdownResponse struct {
+	Markdown string `json:"markdown" example:"1. Вопрос...\n   A) ...\n   B) ..."`
+}

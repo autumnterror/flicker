@@ -64,6 +64,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/ai/file2dbtest": {
+            "post": {
+                "description": "Принимает файл, отправляет его в n8n webhook file2db, который сохраняет данные во векторную БД",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Upload file to vector DB",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to index",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/views.File2DBResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/ai/generatemd": {
             "post": {
                 "description": "Принимает текст и отправляет его в n8n webhook, который генерирует Markdown-конспект через LLM",
@@ -112,7 +156,7 @@ const docTemplate = `{
         },
         "/api/ai/generatemd-test": {
             "post": {
-                "description": "Принимает текст и отправляет его в n8n webhook, который генерирует Markdown-конспект через LLM",
+                "description": "Принимает контекст/промт и отправляет его в n8n webhook, который генерирует задания (тесты, вопросы) в формате Markdown на основе этого контекста",
                 "consumes": [
                     "application/json"
                 ],
@@ -122,15 +166,15 @@ const docTemplate = `{
                 "tags": [
                     "ai"
                 ],
-                "summary": "Generate Markdown summary",
+                "summary": "Generate tasks in Markdown",
                 "parameters": [
                     {
-                        "description": "Text content to summarize",
+                        "description": "Context and/or prompt for tasks generation",
                         "name": "Content",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/views.GenerateMDRequest"
+                            "$ref": "#/definitions/views.GenerateTasksRequest"
                         }
                     }
                 ],
@@ -138,7 +182,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/views.MarkdownResponse"
+                            "$ref": "#/definitions/views.TasksMarkdownResponse"
                         }
                     },
                     "400": {
@@ -396,6 +440,15 @@ const docTemplate = `{
                 }
             }
         },
+        "views.GenerateTasksRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "Контекст и/или промт для генерации заданий"
+                }
+            }
+        },
         "views.MarkdownResponse": {
             "type": "object",
             "properties": {
@@ -420,6 +473,15 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "some info"
+                }
+            }
+        },
+        "views.TasksMarkdownResponse": {
+            "type": "object",
+            "properties": {
+                "markdown": {
+                    "type": "string",
+                    "example": "1. Вопрос...\n   A) ...\n   B) ..."
                 }
             }
         },
