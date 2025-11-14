@@ -129,7 +129,7 @@ func (e *Echo) GenerateMarkdownTest(c echo.Context) error {
 	ctx, done := context.WithTimeout(c.Request().Context(), 30*time.Second)
 	defer done()
 
-	n8nURL := "http://n8n:5678/webhook/generatemd-test"
+	n8nURL := "http://n8n:5678/webhook-test/generatemd"
 
 	payload := struct {
 		Content string `json:"content"`
