@@ -91,7 +91,7 @@ func (e *Echo) GenerateMarkdown(c echo.Context) error {
 	}
 
 	// markdown лежит здесь
-	md := n8nResp.Content.Output
+	md := n8nResp.Output
 
 	log.Success(op, "")
 

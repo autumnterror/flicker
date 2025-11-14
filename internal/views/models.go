@@ -44,9 +44,7 @@ type MarkdownResponse struct {
 }
 
 type N8nResponse struct {
-	Content struct {
-		Output string `json:"output"`
-	} `json:"content"`
+	Output string `json:"output"`
 }
 
 // TranscribeResponse — что отдадим клиенту.
