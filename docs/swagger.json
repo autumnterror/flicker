@@ -63,6 +63,52 @@
                 }
             }
         },
+        "/api/ai/generatemd-test": {
+            "post": {
+                "description": "Принимает текст и отправляет его в n8n webhook, который генерирует Markdown-конспект через LLM",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Generate Markdown summary",
+                "parameters": [
+                    {
+                        "description": "Text content to summarize",
+                        "name": "Content",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/views.GenerateMDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/views.MarkdownResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/ai/transcribe": {
             "post": {
                 "description": "Принимает аудио-файл, отправляет его в сервис транскрипции и возвращает текст",

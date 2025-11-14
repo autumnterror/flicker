@@ -100,6 +100,82 @@ func (e *Echo) GenerateMarkdown(c echo.Context) error {
 	})
 }
 
+// GenerateMarkdown godoc
+// @Summary Generate Markdown summary
+// @Description Принимает текст и отправляет его в n8n webhook, который генерирует Markdown-конспект через LLM
+// @Tags ai
+// @Accept json
+// @Produce json
+// @Param Content body views.GenerateMDRequest true "Text content to summarize"
+// @Success 200 {object} views.MarkdownResponse
+// @Failure 400 {object} views.SWGError
+// @Failure 502 {object} views.SWGError
+// @Router /api/ai/generatemd-test [post]
+func (e *Echo) GenerateMarkdownTest(c echo.Context) error {
+	const op = "net.GenerateMarkdown"
+	log.Info(op, "")
+
+	var r views.GenerateMDRequest
+	if err := c.Bind(&r); err != nil {
+		log.Error(op, "bind json", err)
+		return c.JSON(http.StatusBadRequest, views.SWGError{Error: "bad JSON"})
+	}
+
+	if r.Content == "" {
+		log.Warn(op, "empty content", nil)
+		return c.JSON(http.StatusBadRequest, views.SWGError{Error: "content is required"})
+	}
+
+	ctx, done := context.WithTimeout(c.Request().Context(), 30*time.Second)
+	defer done()
+
+	n8nURL := "http://n8n:5678/webhook/generatemd-test"
+
+	payload := struct {
+		Content string `json:"content"`
+	}{
+		Content: r.Content,
+	}
+
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Error(op, "marshal request body", err)
+		return c.JSON(http.StatusBadRequest, views.SWGError{Error: "bad argument"})
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, n8nURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		log.Error(op, "create request to n8n", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "cannot create request to n8n"})
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := http.DefaultClient
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error(op, "request to n8n", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "n8n request error"})
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(op, "read n8n response", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "cannot read n8n response"})
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Warn(op, "n8n returned non-200", fmt.Errorf("status: %s, body: %s", resp.Status, string(respBody)))
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "markdown generation error"})
+	}
+
+	log.Success(op, "")
+
+	return c.JSON(http.StatusOK, views.MarkdownResponse{
+		Markdown: "",
+	})
+}
+
 // TranscribeAudio godoc
 // @Summary Transcribe audio file
 // @Description Принимает аудио-файл, отправляет его в сервис транскрипции и возвращает текст
