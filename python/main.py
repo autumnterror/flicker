@@ -4,6 +4,7 @@ import tempfile
 from io import BytesIO
 from pathlib import Path
 from typing import List, Dict, Any
+import subprocess
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
@@ -33,29 +34,83 @@ app = FastAPI(
     version="1.0.0",
 )
 
+VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm"}
+
+
+def extract_audio_from_video(path: Path) -> AudioSegment:
+    """
+    Явно вытаскиваем аудиодорожку из видеофайла через ffmpeg во временный wav
+    и загружаем её как AudioSegment.
+    """
+    tmp_audio = None
+    try:
+        tmp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+        tmp_audio_path = Path(tmp_audio.name)
+        tmp_audio.close()
+
+        # ffmpeg -i input.mp4 -vn -acodec pcm_s16le -ar 16000 -ac 1 output.wav
+        cmd = [
+            "ffmpeg",
+            "-i",
+            str(path),
+            "-vn",
+            "-acodec",
+            "pcm_s16le",
+            "-ar",
+            "16000",
+            "-ac",
+            "1",
+            str(tmp_audio_path),
+        ]
+
+        # ffmpeg много пишет в stderr, поэтому подавляем, чтобы не засорять логи
+        result = subprocess.run(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(f"ffmpeg вернул код {result.returncode}")
+
+        audio = AudioSegment.from_file(tmp_audio_path)
+        return audio
+    finally:
+        if tmp_audio is not None:
+            try:
+                Path(tmp_audio.name).unlink(missing_ok=True)
+            except Exception:
+                pass
+
 
 def load_audio_from_temp(path: Path) -> AudioSegment:
     """
-    Упрощённый вариант: грузим файл через pydub/ffmpeg.
-    Deepgram GUI-скрипт делал танцы с Unicode-путями, нам пока хватит этого.
+    Грузим аудио/видео файл как AudioSegment.
+    Для видео контейнеров (mp4 и др.) сначала вытаскиваем аудио через ffmpeg.
     """
+    suffix = path.suffix.lower()
+
     try:
+        if suffix in VIDEO_EXTENSIONS:
+            # Явно считаем, что это видео и вытаскиваем аудиодорожку
+            return extract_audio_from_video(path)
+        # Остальные форматы (mp3, wav, m4a, ogg и т.п.) пусть обрабатывает pydub напрямую
         return AudioSegment.from_file(path)
     except Exception as e:
-        raise RuntimeError(f"Не удалось открыть файл через FFmpeg/pydub: {e}") from e
+        raise RuntimeError(f"Не удалось открыть файл как аудио: {e}") from e
 
 
 @app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
     """
-    Принимает аудио/видео файл (mp3, wav, m4a, mp4 и т.п.) и возвращает:
+    Принимает аудио/видео файл (mp3, wav, m4a, mp4, mov, mkv, avi, webm и т.п.) и возвращает:
     - полный текст
     - список сегментов (start/end в секундах + текст)
     """
     if not file.filename:
         raise HTTPException(status_code=400, detail="Файл не передан")
 
-    # Сохраняем загрузку во временный файл (pydub любит пути)
+    # Сохраняем загрузку во временный файл (pydub/ffmpeg любят пути)
     suffix = Path(file.filename).suffix or ".tmp"
 
     try:
@@ -67,7 +122,7 @@ async def transcribe(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Ошибка при сохранении временного файла: {e}")
 
     try:
-        # 1) Загружаем аудио/видео целиком
+        # 1) Загружаем аудио/видео целиком (для видео вытащим аудиодорожку)
         full_audio = load_audio_from_temp(tmp_path)
         total_ms = len(full_audio)
 
@@ -94,7 +149,7 @@ async def transcribe(file: UploadFile = File(...)):
 
             try:
                 # ВАЖНО: здесь тот же вызов, что и в dp.py,
-                # только без UI и очередей — прямой запрос к SDK.
+                # только без UI и очередей — прямой запрос к Deepgram SDK.
                 response = dg_client.listen.v1.media.transcribe_file(
                     request=buf.read(),
                     model=DEEPGRAM_MODEL,
