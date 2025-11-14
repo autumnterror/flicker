@@ -193,6 +193,37 @@ paths:
     post:
       consumes:
       - application/json
+      description: Принимает текст и отправляет его в n8n webhook, который генерирует
+        Markdown-конспект через LLM
+      parameters:
+      - description: Text content to summarize
+        in: body
+        name: Content
+        required: true
+        schema:
+          $ref: '#/definitions/views.GenerateMDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/views.MarkdownResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/views.SWGError'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/views.SWGError'
+      summary: Generate Markdown summary
+      tags:
+      - ai
+  /api/ai/gentest:
+    post:
+      consumes:
+      - application/json
       description: Принимает контекст/промт и отправляет его в n8n webhook, который
         генерирует задания (тесты, вопросы) в формате Markdown на основе этого контекста
       parameters:
