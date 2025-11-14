@@ -34,3 +34,17 @@ type Tokens struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
+
+type GenerateMDRequest struct {
+	Content string `json:"content" example:"Текст документа, который нужно законспектировать"`
+}
+
+type MarkdownResponse struct {
+	Markdown string `json:"markdown" example:"# Конспект ..."`
+}
+
+type N8nResponse struct {
+	Content struct {
+		Output string `json:"output"`
+	} `json:"content"`
+}

@@ -53,6 +53,10 @@ func New(
 			auth.POST("", e.Auth)
 			auth.POST("/reg", e.Reg)
 		}
+		ai := api.Group("/ai")
+		{
+			ai.POST("/generatemd", e.GenerateMarkdown)
+		}
 	}
 
 	return e
