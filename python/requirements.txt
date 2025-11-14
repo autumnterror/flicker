@@ -1,3 +1,5 @@
 fastapi
 uvicorn[standard]
-faster-whisper
+pydub
+deepgram-sdk
+python-multipart
