@@ -73,3 +73,5 @@ type TranscriberServiceResponse struct {
 	// 	Text         string `json:"text"`
 	// } `json:"segments"`
 }
+
+type File2DBResponse map[string]interface{}

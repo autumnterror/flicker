@@ -20,6 +20,50 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/ai/file2db": {
+            "post": {
+                "description": "Принимает файл, отправляет его в n8n webhook file2db, который сохраняет данные во векторную БД",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Upload file to vector DB",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "File to index",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/views.File2DBResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/ai/generatemd": {
             "post": {
                 "description": "Принимает текст и отправляет его в n8n webhook, который генерирует Markdown-конспект через LLM",
@@ -338,6 +382,10 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "views.File2DBResponse": {
+            "type": "object",
+            "additionalProperties": true
         },
         "views.GenerateMDRequest": {
             "type": "object",

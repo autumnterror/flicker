@@ -9,6 +9,9 @@ definitions:
       password:
         type: string
     type: object
+  views.File2DBResponse:
+    additionalProperties: true
+    type: object
   views.GenerateMDRequest:
     properties:
       content:
@@ -80,6 +83,36 @@ info:
   title: flicker rest api
   version: 0.1-.-infDev
 paths:
+  /api/ai/file2db:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Принимает файл, отправляет его в n8n webhook file2db, который сохраняет
+        данные во векторную БД
+      parameters:
+      - description: File to index
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/views.File2DBResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/views.SWGError'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/views.SWGError'
+      summary: Upload file to vector DB
+      tags:
+      - ai
   /api/ai/generatemd:
     post:
       consumes:
