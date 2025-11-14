@@ -56,6 +56,7 @@ func New(
 		ai := api.Group("/ai")
 		{
 			ai.POST("/generatemd", e.GenerateMarkdown)
+			ai.POST("/transcribe", e.TranscribeAudio)
 		}
 	}
 

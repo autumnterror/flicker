@@ -48,3 +48,30 @@ type N8nResponse struct {
 		Output string `json:"output"`
 	} `json:"content"`
 }
+
+// TranscribeResponse — что отдадим клиенту.
+type TranscribeResponse struct {
+	Text            string  `json:"text" example:"полная расшифровка аудио"`
+	Filename        string  `json:"filename,omitempty" example:"lecture.mp3"`
+	DurationSeconds float64 `json:"duration_seconds,omitempty" example:"123.45"`
+	Language        string  `json:"language,omitempty" example:"ru"`
+	Model           string  `json:"model,omitempty" example:"nova-2-general"`
+}
+
+// Вспомогательная структура для ответа Python-сервиса.
+type TranscriberServiceResponse struct {
+	Filename        string  `json:"filename"`
+	DurationSeconds float64 `json:"duration_seconds"`
+	SegmentMinutes  int     `json:"segment_minutes"`
+	SegmentsCount   int     `json:"segments_count"`
+	Language        string  `json:"language"`
+	Model           string  `json:"model"`
+	Text            string  `json:"text"`
+	// Segments можно добавить при необходимости
+	// Segments []struct {
+	// 	SegmentIndex int    `json:"segment_index"`
+	// 	StartSec     int    `json:"start_sec"`
+	// 	EndSec       int    `json:"end_sec"`
+	// 	Text         string `json:"text"`
+	// } `json:"segments"`
+}

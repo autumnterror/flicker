@@ -9,6 +9,18 @@ definitions:
       password:
         type: string
     type: object
+  views.GenerateMDRequest:
+    properties:
+      content:
+        example: Текст документа, который нужно законспектировать
+        type: string
+    type: object
+  views.MarkdownResponse:
+    properties:
+      markdown:
+        example: '# Конспект ...'
+        type: string
+    type: object
   views.SWGError:
     properties:
       error:
@@ -26,6 +38,24 @@ definitions:
       access_token:
         type: string
       refresh_token:
+        type: string
+    type: object
+  views.TranscribeResponse:
+    properties:
+      duration_seconds:
+        example: 123.45
+        type: number
+      filename:
+        example: lecture.mp3
+        type: string
+      language:
+        example: ru
+        type: string
+      model:
+        example: nova-2-general
+        type: string
+      text:
+        example: полная расшифровка аудио
         type: string
     type: object
   views.UserRegister:
@@ -50,6 +80,67 @@ info:
   title: flicker rest api
   version: 0.1-.-infDev
 paths:
+  /api/ai/generatemd:
+    post:
+      consumes:
+      - application/json
+      description: Принимает текст и отправляет его в n8n webhook, который генерирует
+        Markdown-конспект через LLM
+      parameters:
+      - description: Text content to summarize
+        in: body
+        name: Content
+        required: true
+        schema:
+          $ref: '#/definitions/views.GenerateMDRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/views.MarkdownResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/views.SWGError'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/views.SWGError'
+      summary: Generate Markdown summary
+      tags:
+      - ai
+  /api/ai/transcribe:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Принимает аудио-файл, отправляет его в сервис транскрипции и возвращает
+        текст
+      parameters:
+      - description: Audio file
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/views.TranscribeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/views.SWGError'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/views.SWGError'
+      summary: Transcribe audio file
+      tags:
+      - ai
   /api/auth:
     post:
       consumes:

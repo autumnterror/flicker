@@ -7,6 +7,7 @@ import (
 	"flicker/internal/views"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"time"
 
@@ -96,5 +97,105 @@ func (e *Echo) GenerateMarkdown(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, views.MarkdownResponse{
 		Markdown: md,
+	})
+}
+
+// TranscribeAudio godoc
+// @Summary Transcribe audio file
+// @Description Принимает аудио-файл, отправляет его в сервис транскрипции и возвращает текст
+// @Tags ai
+// @Accept mpfd
+// @Produce json
+// @Param file formData file true "Audio file"
+// @Success 200 {object} views.TranscribeResponse
+// @Failure 400 {object} views.SWGError
+// @Failure 502 {object} views.SWGError
+// @Router /api/ai/transcribe [post]
+func (e *Echo) TranscribeAudio(c echo.Context) error {
+	const op = "net.TranscribeAudio"
+	log.Info(op, "")
+
+	// Получаем файл из запроса
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		log.Error(op, "form file", err)
+		return c.JSON(http.StatusBadRequest, views.SWGError{Error: "file is required"})
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		log.Error(op, "open uploaded file", err)
+		return c.JSON(http.StatusBadRequest, views.SWGError{Error: "cannot open uploaded file"})
+	}
+	defer file.Close()
+
+	// Таймаут побольше, чем для LLM — аудио может быть длинным
+	ctx, done := context.WithTimeout(c.Request().Context(), 2*time.Minute)
+	defer done()
+
+	// URL Python-сервиса транскрипции.
+	// Можешь вынести в конфиг: e.cfg.TranscriberURL
+	transcriberURL := "http://localhost:8008/transcribe"
+
+	// Готовим multipart/form-data тело для запроса к сервису
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	part, err := writer.CreateFormFile("file", fileHeader.Filename)
+	if err != nil {
+		log.Error(op, "create form file", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "cannot create form file for transcriber"})
+	}
+
+	if _, err := io.Copy(part, file); err != nil {
+		log.Error(op, "copy file to form", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "cannot copy file to transcriber request"})
+	}
+
+	if err := writer.Close(); err != nil {
+		log.Error(op, "close multipart writer", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "cannot finalize transcriber request"})
+	}
+
+	// Создаём запрос к Python-сервису
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, transcriberURL, &buf)
+	if err != nil {
+		log.Error(op, "create request to transcriber", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "cannot create request to transcriber"})
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Error(op, "request to transcriber", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "transcriber request error"})
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(op, "read transcriber response", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "cannot read transcriber response"})
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		log.Warn(op, "transcriber returned non-200", fmt.Errorf("status: %s, body: %s", resp.Status, string(respBody)))
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "transcription error"})
+	}
+
+	var svcResp views.TranscriberServiceResponse
+	if err := json.Unmarshal(respBody, &svcResp); err != nil {
+		log.Error(op, "unmarshal transcriber response", err)
+		return c.JSON(http.StatusBadGateway, views.SWGError{Error: "bad transcriber response"})
+	}
+
+	log.Success(op, "")
+
+	return c.JSON(http.StatusOK, views.TranscribeResponse{
+		Text:            svcResp.Text,
+		Filename:        svcResp.Filename,
+		DurationSeconds: svcResp.DurationSeconds,
+		Language:        svcResp.Language,
+		Model:           svcResp.Model,
 	})
 }

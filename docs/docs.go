@@ -20,6 +20,96 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/ai/generatemd": {
+            "post": {
+                "description": "Принимает текст и отправляет его в n8n webhook, который генерирует Markdown-конспект через LLM",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Generate Markdown summary",
+                "parameters": [
+                    {
+                        "description": "Text content to summarize",
+                        "name": "Content",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/views.GenerateMDRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/views.MarkdownResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/ai/transcribe": {
+            "post": {
+                "description": "Принимает аудио-файл, отправляет его в сервис транскрипции и возвращает текст",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "ai"
+                ],
+                "summary": "Transcribe audio file",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Audio file",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/views.TranscribeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/views.SWGError"
+                        }
+                    }
+                }
+            }
+        },
         "/api/auth": {
             "post": {
                 "description": "Authenticates user and returns access/refresh tokens",
@@ -203,6 +293,24 @@ const docTemplate = `{
                 }
             }
         },
+        "views.GenerateMDRequest": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string",
+                    "example": "Текст документа, который нужно законспектировать"
+                }
+            }
+        },
+        "views.MarkdownResponse": {
+            "type": "object",
+            "properties": {
+                "markdown": {
+                    "type": "string",
+                    "example": "# Конспект ..."
+                }
+            }
+        },
         "views.SWGError": {
             "type": "object",
             "properties": {
@@ -229,6 +337,31 @@ const docTemplate = `{
                 },
                 "refresh_token": {
                     "type": "string"
+                }
+            }
+        },
+        "views.TranscribeResponse": {
+            "type": "object",
+            "properties": {
+                "duration_seconds": {
+                    "type": "number",
+                    "example": 123.45
+                },
+                "filename": {
+                    "type": "string",
+                    "example": "lecture.mp3"
+                },
+                "language": {
+                    "type": "string",
+                    "example": "ru"
+                },
+                "model": {
+                    "type": "string",
+                    "example": "nova-2-general"
+                },
+                "text": {
+                    "type": "string",
+                    "example": "полная расшифровка аудио"
                 }
             }
         },

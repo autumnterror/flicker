@@ -1,0 +1,1 @@
+docker exec -i usersdb pg_dump userdb > dump.sql -U postgres
